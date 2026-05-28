@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Consumption Chart</title>
+<style>
+    /* 基础容器样式 */
+    .chart-widget {
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 标题样式 */
+    .chart-title {
+        text-align: center;
+        color: #4b5563;
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 40px;
+    }
+    .chart-title span {
+        font-size: 20px;
+        font-weight: normal;
+        color: #6b7280;
+    }
+
+    /* 图表主体区域（包含网格线） */
+    .chart-body {
+        position: relative;
+        height: 350px; /* 柱状图区域高度 */
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        padding-bottom: 30px;
+        border-bottom: 2px solid #d1d5db;
+        margin-bottom: 20px;
+    }
+
+    /* 背景水平网格线 */
+    .grid-lines {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 30px;
+        height: 300px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        z-index: 0;
+    }
+    .grid-line {
+        border-bottom: 1px dashed #e5e7eb;
+        width: 100%;
+    }
+
+    /* 每一列数据组 */
+    .chart-column {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    /* 柱子容器 */
+    .bars-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 15px;
+        height: 300px; /* 设定图表最大高度 */
+        width: 100%;
+    }
+
+    /* 单个柱子及其数值标签 - 修复了 height: 100% 导致不显示的问题 */
+    .bar-wrapper {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        width: 45px;
+        height: 100%; /* 关键修复：让容器继承高度 */
+    }
+    
+    .bar-value {
+        font-size: 14px;
+        color: #4b5563;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .bar {
+        width: 100%;
+        border-radius: 4px 4px 0 0;
+        transition: height 0.5s ease;
+    }
+    
+    /* 颜色定义 */
+    .bar-gray { background-color: #d1d5db; }
+    .bar-blue { background-color: #1e3a8a; } /* 品牌蓝 */
+    
+    .bar-label {
+        font-size: 12px;
+        color: #4b5563;
+        margin-top: 10px;
+        text-align: center;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    /* X轴场景说明文本 */
+    .scenario-text {
+        text-align: center;
+        font-size: 14px;
+        color: #4b5563;
+        margin-top: 20px;
+        min-height: 40px;
+        padding: 0 10px;
+        font-weight: 600;
+    }
+
+    /* 底部数据与图片展示区 */
+    .bottom-section {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 30px;
+    }
+    .bottom-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    /* 降幅百分比 */
+    .percentage-drop {
+        font-size: 24px;
+        font-weight: bold;
+        color: #1e3a8a;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .arrow-down { font-size: 20px; }
+
+    /* 图片占位框 */
+    .image-box {
+        width: 100%;
+        max-width: 160px;
+        aspect-ratio: 1 / 1;
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 13px;
+        text-align: center;
+        overflow: hidden;
+    }
+    .image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 900px) {
+        .chart-body { overflow-x: auto; min-width: 800px; }
+        .bottom-section { min-width: 800px; overflow-x: auto; }
+        .bar-wrapper { width: 35px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="chart-widget">
+    <div class="chart-title">
+        Energy Consumption <span>(kWh/100km)</span>
+    </div>
+
+    <div class="chart-body">
+        <div class="grid-lines">
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+        </div>
+
+        <div class="chart-column">
+            <div class="bars-container">
+                <div class="bar-wrapper">
+                    <div class="bar-value">55.5</div>
+                    <div class="bar bar-gray" style="height: 92.5%;"></div>
+                    <div class="bar-label">Brand Y</div>
+                </div>
+                <div class="bar-wrapper">
+                    <div class="bar-value">39.2</div>
+                    <div class="bar bar-blue" style="height: 65.3%;"></div>
+                    <div class="bar-label">CATL-T5</div>
+                </div>
+            </div>
+            <div class="scenario-text">Chongqing Test Track<br>Highway Section</div>
+        </div>
+
+        <div class="chart-column">
+            <div class="bars-container">
+                <div class="bar-wrapper">
+                    <div class="bar-value">43.3</div>
+                    <div class="bar bar-gray" style="height: 72.1%;"></div>
+                    <div class="bar-label">Brand JA-1</div>
+                </div>
+                <div class="bar-wrapper">
+                    <div class="bar-value">43.3</div>
+                    <div class="bar bar-gray" style="height: 72.1%;"></div>
+                    <div class="bar-label">Brand JA-2</div>
+                </div>
+                <div class="bar-wrapper">
+                    <div class="bar-value">31.7</div>
+                    <div class="bar bar-blue" style="height: 52.8%;"></div>
+                    <div class="bar-label">CATL-T5</div>
+                </div>
+            </div>
+            <div class="scenario-text"><br>Hefei Urban Expressway</div>
+        </div>
+
+        <div class="chart-column">
+            <div class="bars-container">
+                <div class="bar-wrapper">
+                    <div class="bar-value">50.8</div>
+                    <div class="bar bar-gray" style="height: 84.6%;"></div>
+                    <div class="bar-label">Brand JM</div>
+                </div>
+                <div class="bar-wrapper">
+                    <div class="bar-value">38.6</div>
+                    <div class="bar bar-blue" style="height: 64.3%;"></div>
+                    <div class="bar-label">CATL-T5</div>
+                </div>
+            </div>
+            <div class="scenario-text">Nanchang Ring<br>Expressway</div>
+        </div>
+
+        <div class="chart-column">
+            <div class="bars-container">
+                <div class="bar-wrapper">
+                    <div class="bar-value">50.8</div>
+                    <div class="bar bar-gray" style="height: 84.6%;"></div>
+                    <div class="bar-label">Brand S</div>
+                </div>
+                <div class="bar-wrapper">
+                    <div class="bar-value">38.2</div>
+                    <div class="bar bar-blue" style="height: 63.6%;"></div>
+                    <div class="bar-label">CATL-T5</div>
+                </div>
+            </div>
+            <div class="scenario-text"><br>Chongqing Test Bench 1</div>
+        </div>
+
+        <div class="chart-column">
+            <div class="bars-container">
+                <div class="bar-wrapper">
+                    <div class="bar-value">49.3</div>
+                    <div class="bar bar-gray" style="height: 82.1%;"></div>
+                    <div class="bar-label">Brand Q</div>
+                </div>
+                <div class="bar-wrapper">
+                    <div class="bar-value">38.2</div>
+                    <div class="bar bar-blue" style="height: 63.6%;"></div>
+                    <div class="bar-label">CATL-T5</div>
+                </div>
+            </div>
+            <div class="scenario-text"><br>Chongqing Test Bench 2</div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="bottom-column">
+            <div class="percentage-drop"><span class="arrow-down">↓</span> 29.4%</div>
+            <div class="image-box">
+                <img src="img1.jpg" alt="Highway Test Track" onerror="this.style.display='none'; this.parentNode.innerHTML='[Image: Highway Section]';">
+            </div>
+        </div>
+        
+        <div class="bottom-column">
+            <div class="percentage-drop"><span class="arrow-down">↓</span> 26.6%</div>
+            <div class="image-box">
+                <img src="img2.jpg" alt="Urban Expressway Map" onerror="this.style.display='none'; this.parentNode.innerHTML='[Image: Urban Map]';">
+            </div>
+        </div>
+
+        <div class="bottom-column">
+            <div class="percentage-drop"><span class="arrow-down">↓</span> 23.9%</div>
+            <div class="image-box">
+                <img src="img3.jpg" alt="Ring Expressway Map" onerror="this.style.display='none'; this.parentNode.innerHTML='[Image: Ring Map]';">
+            </div>
+        </div>
+
+        <div class="bottom-column">
+            <div class="percentage-drop"><span class="arrow-down">↓</span> 24.8%</div>
+            <div class="image-box">
+                <img src="img4.jpg" alt="Test Bench 1" onerror="this.style.display='none'; this.parentNode.innerHTML='[Image: Test Bench 1]';">
+            </div>
+        </div>
+
+        <div class="bottom-column">
+            <div class="percentage-drop"><span class="arrow-down">↓</span> 22.5%</div>
+            <div class="image-box">
+                <img src="img5.jpg" alt="Test Bench 2" onerror="this.style.display='none'; this.parentNode.innerHTML='[Image: Test Bench 2]';">
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
